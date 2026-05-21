@@ -21,7 +21,7 @@ spec:
           - name: ghcr-secret
       containers:
         - name: frontend
-          image: ghcr.io/metallikame/mspr_2_front:f6a1895
+          image: ghcr.io/metallikame/mspr_2_front:3f4a29d
           imagePullPolicy: Always
           ports:
             - containerPort: 80
