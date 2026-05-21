@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>COFRAP — Portail d'accès sécurisé</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c10;
+    --surface: #0f1318;
+    --surface2: #161b24;
+    --border: #1e2733;
+    --accent: #00d4ff;
+    --accent2: #7c3aed;
+    --success: #10b981;
+    --error: #ef4444;
+    --warning: #f59e0b;
+    --text: #e2e8f0;
+    --text-muted: #64748b;
+    --text-dim: #334155;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  /* Animated grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 40px 40px;
+    opacity: 0.4;
+    pointer-events: none;
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(ellipse at 60% 40%, rgba(0,212,255,0.05) 0%, transparent 60%),
+                radial-gradient(ellipse at 30% 70%, rgba(124,58,237,0.05) 0%, transparent 60%);
+    pointer-events: none;
+    animation: drift 20s ease-in-out infinite alternate;
+  }
+
+  @keyframes drift {
+    from { transform: translate(0,0); }
+    to   { transform: translate(30px, 20px); }
+  }
+
+  /* Header */
+  .header {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    padding: 16px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    background: rgba(10,12,16,0.8);
+    backdrop-filter: blur(12px);
+    z-index: 100;
+  }
+
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.4rem;
+    letter-spacing: -0.02em;
+    color: var(--text);
+  }
+  .logo span { color: var(--accent); }
+
+  .status-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .status-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--success);
+    animation: pulse-dot 2s infinite;
+  }
+  @keyframes pulse-dot {
+    0%,100% { opacity: 1; }
+    50%      { opacity: 0.3; }
+  }
+
+  /* Main container */
+  .container {
+    position: relative;
+    z-index: 10;
+    width: 100%;
+    max-width: 480px;
+    padding: 24px;
+    margin-top: 80px;
+  }
+
+  /* Panel */
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    display: none;
+    animation: panel-in 0.3s ease;
+  }
+  .panel.active { display: block; }
+  @keyframes panel-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .panel-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .panel-icon {
+    width: 32px; height: 32px;
+    border: 1px solid var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.9rem;
+    color: var(--accent);
+    flex-shrink: 0;
+  }
+  .panel-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.95rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .panel-subtitle {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    margin-top: 2px;
+    letter-spacing: 0.08em;
+  }
+
+  .panel-body { padding: 24px; }
+
+  /* Form elements */
+  .field { margin-bottom: 16px; }
+  .field label {
+    display: block;
+    font-size: 0.65rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+  }
+  .field input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    padding: 10px 14px;
+    outline: none;
+    border-radius: 0;
+    transition: border-color 0.15s;
+  }
+  .field input:focus { border-color: var(--accent); }
+  .field input::placeholder { color: var(--text-dim); }
+
+  /* Buttons */
+  .btn {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    cursor: pointer;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border-radius: 0;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: #000;
+  }
+  .btn-primary:hover { filter: brightness(1.1); }
+  .btn-primary:active { filter: brightness(0.9); }
+  .btn-ghost {
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+    margin-top: 8px;
+  }
+  .btn-ghost:hover { border-color: var(--text-muted); color: var(--text); }
+  .btn-success {
+    background: var(--success);
+    color: #000;
+    margin-top: 8px;
+  }
+  .btn-success:hover { filter: brightness(1.1); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; filter: none !important; }
+
+  /* Alert */
+  .alert {
+    display: none;
+    padding: 10px 14px;
+    border-left: 3px solid;
+    font-size: 0.75rem;
+    line-height: 1.5;
+    margin-bottom: 16px;
+    background: var(--surface2);
+  }
+  .alert.show { display: block; }
+  .alert.error   { border-color: var(--error);   color: var(--error); }
+  .alert.success { border-color: var(--success);  color: var(--success); }
+  .alert.warning { border-color: var(--warning);  color: var(--warning); }
+  .alert.info    { border-color: var(--accent);   color: var(--accent); }
+
+  /* Divider */
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 16px 0;
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .divider::before, .divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* QR code display */
+  .qr-container {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    padding: 20px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    margin-top: 16px;
+  }
+  .qr-container.show { display: flex; }
+  .qr-container img {
+    width: 180px; height: 180px;
+    border: 4px solid #fff;
+    image-rendering: pixelated;
+  }
+  .qr-label {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    letter-spacing: 0.08em;
+    text-align: center;
+    text-transform: uppercase;
+  }
+  .secret-display {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--accent);
+    background: rgba(0,212,255,0.05);
+    border: 1px solid rgba(0,212,255,0.2);
+    padding: 8px 12px;
+    letter-spacing: 0.1em;
+    word-break: break-all;
+    text-align: center;
+  }
+
+  /* Step indicator */
+  .steps {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 20px;
+  }
+  .step {
+    flex: 1;
+    height: 3px;
+    background: var(--border);
+    transition: background 0.3s;
+  }
+  .step.done { background: var(--success); }
+  .step.active { background: var(--accent); }
+
+  /* Terminal-style success */
+  .auth-success {
+    display: none;
+    padding: 24px;
+    border: 1px solid var(--success);
+    background: rgba(16,185,129,0.05);
+    text-align: center;
+  }
+  .auth-success.show { display: block; }
+  .auth-success-icon {
+    font-size: 2.5rem;
+    margin-bottom: 12px;
+  }
+  .auth-success-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--success);
+    margin-bottom: 6px;
+  }
+  .auth-success-sub {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    letter-spacing: 0.08em;
+  }
+  .user-chip {
+    display: inline-block;
+    margin-top: 12px;
+    padding: 6px 14px;
+    border: 1px solid var(--success);
+    color: var(--success);
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+  }
+
+  /* Nav tabs */
+  .nav-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 20px;
+  }
+  .nav-tab {
+    flex: 1;
+    padding: 10px;
+    text-align: center;
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s;
+    background: none;
+    border-top: none;
+    border-left: none;
+    border-right: none;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .nav-tab.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+  .nav-tab:hover:not(.active) { color: var(--text); }
+
+  /* Loading spinner */
+  .spinner {
+    width: 14px; height: 14px;
+    border: 2px solid transparent;
+    border-top-color: currentColor;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    display: none;
+  }
+  .spinner.show { display: block; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Responsive */
+  @media (max-width: 520px) {
+    .container { padding: 16px; }
+    .header { padding: 12px 20px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="logo">COF<span>RAP</span></div>
+  <div class="status-badge">
+    <div class="status-dot"></div>
+    Système opérationnel
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- === LOGIN PANEL === -->
+  <div class="panel active" id="panel-login">
+    <div class="panel-header">
+      <div class="panel-icon">⚿</div>
+      <div>
+        <div class="panel-title">Authentification</div>
+        <div class="panel-subtitle">Accès sécurisé — 2FA requis</div>
+      </div>
+    </div>
+    <div class="panel-body">
+      <div class="alert" id="login-alert"></div>
+
+      <div class="field">
+        <label>Identifiant</label>
+        <input type="text" id="login-username" placeholder="prenom.nom" autocomplete="username">
+      </div>
+      <div class="field">
+        <label>Mot de passe</label>
+        <input type="password" id="login-password" placeholder="••••••••••••" autocomplete="current-password">
+      </div>
+      <div class="field">
+        <label>Code 2FA (TOTP)</label>
+        <input type="text" id="login-totp" placeholder="000000" maxlength="6" autocomplete="one-time-code" inputmode="numeric">
+      </div>
+
+      <button class="btn btn-primary" id="btn-login">
+        <span class="spinner" id="login-spinner"></span>
+        <span id="btn-login-text">Se connecter</span>
+      </button>
+
+      <div class="divider">ou</div>
+
+      <button class="btn btn-ghost" onclick="showPanel('panel-register')">
+        Créer un compte
+      </button>
+    </div>
+  </div>
+
+  <!-- === REGISTER PANEL === -->
+  <div class="panel" id="panel-register">
+    <div class="panel-header">
+      <div class="panel-icon">+</div>
+      <div>
+        <div class="panel-title">Nouveau compte</div>
+        <div class="panel-subtitle">Génération des identifiants sécurisés</div>
+      </div>
+    </div>
+    <div class="panel-body">
+
+      <div class="steps">
+        <div class="step active" id="step-1"></div>
+        <div class="step" id="step-2"></div>
+        <div class="step" id="step-3"></div>
+      </div>
+
+      <div class="alert" id="register-alert"></div>
+
+      <!-- Step 1: username -->
+      <div id="reg-step-1">
+        <div class="field">
+          <label>Identifiant souhaité</label>
+          <input type="text" id="reg-username" placeholder="prenom.nom">
+        </div>
+        <button class="btn btn-primary" id="btn-gen-password">
+          <span class="spinner" id="pw-spinner"></span>
+          <span id="btn-pw-text">Générer mot de passe</span>
+        </button>
+        <div class="qr-container" id="qr-password">
+          <div class="qr-label">Scannez ce QR code pour enregistrer votre mot de passe</div>
+          <img id="qr-password-img" src="" alt="QR Code mot de passe">
+          <div class="qr-label">Mot de passe généré (usage unique)</div>
+          <div class="secret-display" id="pw-display"></div>
+        </div>
+        <button class="btn btn-success" id="btn-next-2fa" style="display:none" onclick="startStep2FA()">
+          Continuer → Configurer 2FA
+        </button>
+      </div>
+
+      <!-- Step 2: 2FA setup -->
+      <div id="reg-step-2" style="display:none">
+        <div class="alert info show">
+          Votre compte a été créé. Configurez maintenant votre authentificateur TOTP (Google Authenticator, Aegis, etc.)
+        </div>
+        <button class="btn btn-primary" id="btn-gen-2fa">
+          <span class="spinner" id="fa-spinner"></span>
+          <span id="btn-fa-text">Générer secret 2FA</span>
+        </button>
+        <div class="qr-container" id="qr-2fa">
+          <div class="qr-label">Scannez avec votre application TOTP</div>
+          <img id="qr-2fa-img" src="" alt="QR Code 2FA">
+          <div class="qr-label">Secret (si scan impossible)</div>
+          <div class="secret-display" id="fa-secret-display"></div>
+        </div>
+        <button class="btn btn-success" id="btn-finish" style="display:none" onclick="finishRegistration()">
+          Terminer → Se connecter
+        </button>
+      </div>
+
+      <div class="divider">ou</div>
+      <button class="btn btn-ghost" onclick="showPanel('panel-login')">
+        J'ai déjà un compte
+      </button>
+
+    </div>
+  </div>
+
+  <!-- === RENEW PANEL === -->
+  <div class="panel" id="panel-renew">
+    <div class="panel-header">
+      <div class="panel-icon">↻</div>
+      <div>
+        <div class="panel-title">Renouvellement</div>
+        <div class="panel-subtitle">Identifiants expirés — renouvellement requis</div>
+      </div>
+    </div>
+    <div class="panel-body">
+      <div class="alert warning show">
+        Vos identifiants ont plus de 6 mois. Veuillez les renouveler.
+      </div>
+      <div class="alert" id="renew-alert"></div>
+      <div class="field">
+        <label>Identifiant</label>
+        <input type="text" id="renew-username" placeholder="prenom.nom" readonly>
+      </div>
+      <button class="btn btn-primary" id="btn-renew-password">
+        <span class="spinner" id="renew-pw-spinner"></span>
+        <span id="btn-renew-pw-text">Renouveler mot de passe</span>
+      </button>
+      <div class="qr-container" id="qr-renew-password">
+        <div class="qr-label">Nouveau mot de passe</div>
+        <img id="qr-renew-pw-img" src="" alt="QR Code">
+        <div class="secret-display" id="renew-pw-display"></div>
+      </div>
+      <button class="btn btn-success" id="btn-renew-2fa" style="display:none" onclick="renewStart2FA()">
+        Continuer → Renouveler 2FA
+      </button>
+      <div class="qr-container" id="qr-renew-2fa" style="margin-top:12px">
+        <div class="qr-label">Nouveau secret 2FA</div>
+        <img id="qr-renew-2fa-img" src="" alt="QR Code 2FA">
+        <div class="secret-display" id="renew-2fa-display"></div>
+      </div>
+      <button class="btn btn-primary" id="btn-renew-done" style="display:none" onclick="showPanel('panel-login')">
+        Terminé — Se connecter
+      </button>
+    </div>
+  </div>
+
+  <!-- === SUCCESS === -->
+  <div class="auth-success" id="auth-success">
+    <div class="auth-success-icon">✓</div>
+    <div class="auth-success-title">Authentification réussie</div>
+    <div class="auth-success-sub">Accès autorisé au système COFRAP</div>
+    <div class="user-chip" id="success-username"></div>
+    <br><br>
+    <button class="btn btn-ghost" style="max-width:200px;margin:0 auto" onclick="logout()">
+      Se déconnecter
+    </button>
+  </div>
+
+</div>
+
+<script>
+  // === CONFIG ===
+  const GATEWAY = window.OPENFAAS_GATEWAY || 'http://localhost:8080';
+
+  function fnUrl(name) {
+    return `${GATEWAY}/function/${name}`;
+  }
+
+  // === UI HELPERS ===
+  function showPanel(id) {
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('auth-success').classList.remove('show');
+    const panel = document.getElementById(id);
+    if (panel) panel.classList.add('active');
+  }
+
+  function showAlert(id, msg, type='error') {
+    const el = document.getElementById(id);
+    el.textContent = msg;
+    el.className = `alert show ${type}`;
+  }
+  function hideAlert(id) {
+    document.getElementById(id).className = 'alert';
+  }
+
+  function setLoading(btnId, spinnerId, textId, loading, label='') {
+    const btn = document.getElementById(btnId);
+    const sp  = document.getElementById(spinnerId);
+    const tx  = document.getElementById(textId);
+    btn.disabled = loading;
+    sp.classList.toggle('show', loading);
+    if (label) tx.textContent = label;
+  }
+
+  function setStep(n) {
+    for (let i = 1; i <= 3; i++) {
+      const s = document.getElementById(`step-${i}`);
+      if (!s) continue;
+      s.className = 'step' + (i < n ? ' done' : i === n ? ' active' : '');
+    }
+  }
+
+  // === API CALLS ===
+  async function apiCall(fnName, body) {
+    const res = await fetch(fnUrl(fnName), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    return { ok: res.ok, status: res.status, data };
+  }
+
+  // === LOGIN ===
+  document.getElementById('btn-login').addEventListener('click', async () => {
+    const username = document.getElementById('login-username').value.trim();
+    const password = document.getElementById('login-password').value;
+    const totp     = document.getElementById('login-totp').value.trim();
+    hideAlert('login-alert');
+
+    if (!username || !password || !totp) {
+      showAlert('login-alert', 'Tous les champs sont requis.');
+      return;
+    }
+
+    setLoading('btn-login', 'login-spinner', 'btn-login-text', true, 'Vérification…');
+    try {
+      const { ok, status, data } = await apiCall('authenticate', { username, password, totp_code: totp });
+      if (ok && data.success) {
+        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+        document.getElementById('auth-success').classList.add('show');
+        document.getElementById('success-username').textContent = username;
+      } else if (data.action === 'renew') {
+        document.getElementById('renew-username').value = username;
+        showPanel('panel-renew');
+      } else {
+        showAlert('login-alert', data.error || 'Identifiants invalides.');
+      }
+    } catch(e) {
+      showAlert('login-alert', 'Erreur de connexion au serveur.');
+    }
+    setLoading('btn-login', 'login-spinner', 'btn-login-text', false, 'Se connecter');
+  });
+
+  // Enter key on TOTP field
+  document.getElementById('login-totp').addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('btn-login').click();
+  });
+
+  // === REGISTER STEP 1: Generate password ===
+  let regUsername = '';
+
+  document.getElementById('btn-gen-password').addEventListener('click', async () => {
+    regUsername = document.getElementById('reg-username').value.trim();
+    hideAlert('register-alert');
+    if (!regUsername) { showAlert('register-alert', 'Veuillez saisir un identifiant.'); return; }
+
+    setLoading('btn-gen-password', 'pw-spinner', 'btn-pw-text', true, 'Génération…');
+    try {
+      const { ok, data } = await apiCall('generate-password', { username: regUsername });
+      if (ok) {
+        document.getElementById('qr-password-img').src = `data:image/png;base64,${data.qr_code}`;
+        document.getElementById('pw-display').textContent = data.password;
+        document.getElementById('qr-password').classList.add('show');
+        document.getElementById('btn-next-2fa').style.display = 'flex';
+        document.getElementById('reg-username').readOnly = true;
+        setStep(2);
+      } else {
+        showAlert('register-alert', data.error || 'Erreur lors de la génération.');
+      }
+    } catch(e) {
+      showAlert('register-alert', 'Erreur de connexion au serveur.');
+    }
+    setLoading('btn-gen-password', 'pw-spinner', 'btn-pw-text', false, 'Générer mot de passe');
+  });
+
+  // === REGISTER STEP 2: 2FA ===
+  function startStep2FA() {
+    document.getElementById('reg-step-1').style.display = 'none';
+    document.getElementById('reg-step-2').style.display = 'block';
+    setStep(2);
+  }
+
+  document.getElementById('btn-gen-2fa').addEventListener('click', async () => {
+    hideAlert('register-alert');
+    setLoading('btn-gen-2fa', 'fa-spinner', 'btn-fa-text', true, 'Génération…');
+    try {
+      const { ok, data } = await apiCall('generate-2fa', { username: regUsername });
+      if (ok) {
+        document.getElementById('qr-2fa-img').src = `data:image/png;base64,${data.qr_code}`;
+        document.getElementById('fa-secret-display').textContent = data.totp_secret;
+        document.getElementById('qr-2fa').classList.add('show');
+        document.getElementById('btn-finish').style.display = 'flex';
+        setStep(3);
+      } else {
+        showAlert('register-alert', data.error || 'Erreur lors de la génération 2FA.');
+      }
+    } catch(e) {
+      showAlert('register-alert', 'Erreur de connexion au serveur.');
+    }
+    setLoading('btn-gen-2fa', 'fa-spinner', 'btn-fa-text', false, 'Générer secret 2FA');
+  });
+
+  function finishRegistration() {
+    document.getElementById('login-username').value = regUsername;
+    showPanel('panel-login');
+    showAlert('login-alert', 'Compte créé avec succès. Connectez-vous avec votre nouveau mot de passe et code 2FA.', 'success');
+  }
+
+  // === RENEW ===
+  document.getElementById('btn-renew-password').addEventListener('click', async () => {
+    const username = document.getElementById('renew-username').value.trim();
+    hideAlert('renew-alert');
+    setLoading('btn-renew-password', 'renew-pw-spinner', 'btn-renew-pw-text', true, 'Renouvellement…');
+    try {
+      const { ok, data } = await apiCall('generate-password', { username });
+      if (ok) {
+        document.getElementById('qr-renew-pw-img').src = `data:image/png;base64,${data.qr_code}`;
+        document.getElementById('renew-pw-display').textContent = data.password;
+        document.getElementById('qr-renew-password').classList.add('show');
+        document.getElementById('btn-renew-2fa').style.display = 'flex';
+      } else {
+        showAlert('renew-alert', data.error || 'Erreur.');
+      }
+    } catch(e) {
+      showAlert('renew-alert', 'Erreur de connexion.');
+    }
+    setLoading('btn-renew-password', 'renew-pw-spinner', 'btn-renew-pw-text', false, 'Renouveler mot de passe');
+  });
+
+  async function renewStart2FA() {
+    const username = document.getElementById('renew-username').value.trim();
+    hideAlert('renew-alert');
+    try {
+      const { ok, data } = await apiCall('generate-2fa', { username });
+      if (ok) {
+        document.getElementById('qr-renew-2fa-img').src = `data:image/png;base64,${data.qr_code}`;
+        document.getElementById('renew-2fa-display').textContent = data.totp_secret;
+        document.getElementById('qr-renew-2fa').classList.add('show');
+        document.getElementById('btn-renew-done').style.display = 'flex';
+        document.getElementById('btn-renew-2fa').style.display = 'none';
+      } else {
+        showAlert('renew-alert', data.error || 'Erreur 2FA.');
+      }
+    } catch(e) {
+      showAlert('renew-alert', 'Erreur de connexion.');
+    }
+  }
+
+  function logout() {
+    document.getElementById('auth-success').classList.remove('show');
+    document.getElementById('login-username').value = '';
+    document.getElementById('login-password').value = '';
+    document.getElementById('login-totp').value = '';
+    showPanel('panel-login');
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,52 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mspr2-frontend
+  namespace: cofrap
+  labels:
+    app: mspr2-frontend
+    app.kubernetes.io/part-of: cofrap
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mspr2-frontend
+  template:
+    metadata:
+      labels:
+        app: mspr2-frontend
+    spec:
+      containers:
+        - name: frontend
+          image: ghcr.io/metallikame/mspr_2_front:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              memory: "32Mi"
+              cpu: "50m"
+            limits:
+              memory: "64Mi"
+              cpu: "100m"
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 15
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mspr2-frontend
+  namespace: cofrap
+spec:
+  selector:
+    app: mspr2-frontend
+  type: NodePort
+  ports:
+    - port: 80
+      targetPort: 80
+      nodePort: 30080
