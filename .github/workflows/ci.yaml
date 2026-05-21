@@ -2,7 +2,7 @@ name: CI — Build & Push Frontend
 
 on:
   push:
-    branches: [main]
+    branches: [master]
     paths:
       - "src/**"
       - "nginx.conf"
