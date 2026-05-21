@@ -17,6 +17,8 @@ spec:
       labels:
         app: mspr2-frontend
     spec:
+      imagePullSecrets:
+          - name: ghcr-secret
       containers:
         - name: frontend
           image: ghcr.io/metallikame/mspr_2_front:latest
