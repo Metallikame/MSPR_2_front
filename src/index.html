@@ -567,9 +567,36 @@
     <div class="auth-success-sub">Accès autorisé au système COFRAP</div>
     <div class="user-chip" id="success-username"></div>
     <br><br>
-    <button class="btn btn-ghost" style="max-width:200px;margin:0 auto" onclick="logout()">
+    <button class="btn btn-ghost" style="max-width:200px;margin:8px auto 0" onclick="toggleChangePassword()">
+      Modifier le mot de passe
+    </button>
+    <button class="btn btn-ghost" style="max-width:200px;margin:8px auto 0" onclick="logout()">
       Se déconnecter
     </button>
+
+    <div id="change-password-form" style="display:none; text-align:left; margin-top:20px; padding-top:20px; border-top:1px solid var(--border)">
+      <div class="alert" id="change-password-alert"></div>
+      <div class="field">
+        <label>Mot de passe actuel</label>
+        <input type="password" id="cp-current-password" placeholder="••••••••••••" autocomplete="current-password">
+      </div>
+      <div class="field">
+        <label>Code 2FA (TOTP)</label>
+        <input type="text" id="cp-totp" placeholder="000000" maxlength="6" autocomplete="one-time-code" inputmode="numeric">
+      </div>
+      <div class="field">
+        <label>Nouveau mot de passe</label>
+        <input type="password" id="cp-new-password" placeholder="••••••••••••" autocomplete="new-password">
+      </div>
+      <div class="field">
+        <label>Confirmer le nouveau mot de passe</label>
+        <input type="password" id="cp-confirm-password" placeholder="••••••••••••" autocomplete="new-password">
+      </div>
+      <button class="btn btn-primary" id="btn-change-password">
+        <span class="spinner" id="cp-spinner"></span>
+        <span id="btn-cp-text">Valider</span>
+      </button>
+    </div>
   </div>
 
 </div>
@@ -768,8 +795,55 @@
     document.getElementById('login-username').value = '';
     document.getElementById('login-password').value = '';
     document.getElementById('login-totp').value = '';
+    document.getElementById('change-password-form').style.display = 'none';
     showPanel('panel-login');
   }
+
+  // === CHANGE PASSWORD ===
+  function toggleChangePassword() {
+    const form = document.getElementById('change-password-form');
+    form.style.display = form.style.display === 'none' ? 'block' : 'none';
+  }
+
+  document.getElementById('btn-change-password').addEventListener('click', async () => {
+    const username = document.getElementById('success-username').textContent.trim();
+    const currentPassword = document.getElementById('cp-current-password').value;
+    const totp = document.getElementById('cp-totp').value.trim();
+    const newPassword = document.getElementById('cp-new-password').value;
+    const confirmPassword = document.getElementById('cp-confirm-password').value;
+    hideAlert('change-password-alert');
+
+    if (!currentPassword || !totp || !newPassword || !confirmPassword) {
+      showAlert('change-password-alert', 'Tous les champs sont requis.');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      showAlert('change-password-alert', 'Les nouveaux mots de passe ne correspondent pas.');
+      return;
+    }
+
+    setLoading('btn-change-password', 'cp-spinner', 'btn-cp-text', true, 'Validation…');
+    try {
+      const { ok, data } = await apiCall('change-password', {
+        username,
+        current_password: currentPassword,
+        totp_code: totp,
+        new_password: newPassword
+      });
+      if (ok && data.success) {
+        showAlert('change-password-alert', 'Mot de passe modifié avec succès.', 'success');
+        document.getElementById('cp-current-password').value = '';
+        document.getElementById('cp-totp').value = '';
+        document.getElementById('cp-new-password').value = '';
+        document.getElementById('cp-confirm-password').value = '';
+      } else {
+        showAlert('change-password-alert', data.error || 'Erreur lors de la modification.');
+      }
+    } catch(e) {
+      showAlert('change-password-alert', 'Erreur de connexion au serveur.');
+    }
+    setLoading('btn-change-password', 'cp-spinner', 'btn-cp-text', false, 'Valider');
+  });
 </script>
 </body>
 </html>
